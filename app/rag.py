@@ -15,19 +15,41 @@ load_dotenv()
 ROOT = Path(__file__).resolve().parents[1]
 MENU_PATH = ROOT / "data" / "menu.docx"
 PROMPT_DIR = ROOT / "prompts"
+INDEX_DIR = ROOT / "data" / "faiss_index"
 
 
 def format_docs(docs) -> str:
     return "\n\n".join(doc.page_content for doc in docs)
 
 
+def _index_is_fresh() -> bool:
+    index_file = INDEX_DIR / "index.faiss"
+    if not index_file.exists() or not MENU_PATH.exists():
+        return False
+    return index_file.stat().st_mtime >= MENU_PATH.stat().st_mtime
+
+
+def load_or_create_vectorstore():
+    embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+    if _index_is_fresh():
+        return FAISS.load_local(
+            str(INDEX_DIR),
+            embeddings,
+            allow_dangerous_deserialization=True,
+        )
+
+    docs = load_menu_docs(MENU_PATH)
+    vectorstore = FAISS.from_documents(docs, embeddings)
+    INDEX_DIR.mkdir(parents=True, exist_ok=True)
+    vectorstore.save_local(str(INDEX_DIR))
+    return vectorstore
+
+
 def build_chain():
     if not os.getenv("OPENAI_API_KEY"):
         raise RuntimeError("OPENAI_API_KEY is not set")
 
-    docs = load_menu_docs(MENU_PATH)
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
-    vectorstore = FAISS.from_documents(docs, embeddings)
+    vectorstore = load_or_create_vectorstore()
     retriever = vectorstore.as_retriever(search_kwargs={"k": 5})
 
     prompt = ChatPromptTemplate.from_messages(
@@ -48,3 +70,8 @@ def build_chain():
         | llm
         | StrOutputParser()
     )
+
+
+if __name__ == "__main__":
+    load_or_create_vectorstore()
+    print(f"Saved vector index to {INDEX_DIR}")
