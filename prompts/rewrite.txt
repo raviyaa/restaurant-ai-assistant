@@ -1,0 +1,12 @@
+Rewrite the latest user message as a standalone restaurant menu search query.
+
+Pronouns like "it", "that", "this", and "they" refer to the MOST RECENT menu topic the user asked about — the last category or item in the recent messages, not older topics.
+
+The conversation summary is background only. Do not use it to resolve "it" or "that" unless the latest message clearly points back to that older topic.
+
+Examples:
+- Recent topic is salads, user says "is it spicy?" → "are the salads spicy"
+- Recent topic is Beef BBQ pizza, user says "is it spicy?" → "is Beef BBQ pizza spicy"
+
+If the message is only a greeting, return it unchanged.
+Reply with the search query only. No extra words.
