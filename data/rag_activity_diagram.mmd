@@ -1,0 +1,16 @@
+flowchart TD
+    start((Start)) --> boot[FastAPI startup]
+    boot --> parse[Load menu.docx\nand parse one chunk per item]
+    parse --> index{FAISS index\nfresh vs menu.docx?}
+    index -->|No| embed[Embed each chunk with\ntext-embedding-3-small\nand save FAISS]
+    index -->|Yes| loadidx[Load saved FAISS]
+    embed --> ready[App ready]
+    loadidx --> ready
+
+    ready --> ask[Receive POST /ask\nJSON: question]
+    ask --> qembed[Embed the question\nsame embedding model]
+    qembed --> search[FAISS similarity search\ntop 5 item chunks]
+    search --> prompt[Fill ChatPromptTemplate\nsystem.txt + human.txt\ncontext + question]
+    prompt --> llm[ChatOpenAI gpt-4o-mini]
+    llm --> resp[Return JSON\nanswer]
+    resp --> stop((End))
