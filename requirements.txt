@@ -4,6 +4,8 @@ langchain
 langchain-core
 langchain-community
 langchain-openai
+langgraph
+langgraph-checkpoint-sqlite
 faiss-cpu
 openai
 fastapi
